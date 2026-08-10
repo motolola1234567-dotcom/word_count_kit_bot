@@ -1,12 +1,16 @@
 import os
+import sys
 import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-# Enable logging
+# Configure logging for Railway
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    level=logging.INFO,
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
 )
 logger = logging.getLogger(__name__)
 
@@ -19,7 +23,6 @@ def analyze_text(text):
     sentence_count = text.count('.') + text.count('!') + text.count('?')
     paragraph_count = max(1, text.count('\n') + 1)
     
-    # Calculate average word length
     words = text.split()
     avg_word_length = sum(len(word) for word in words) / len(words) if words else 0
     
@@ -122,9 +125,11 @@ def main() -> None:
         token = os.environ.get('TELEGRAM_BOT_TOKEN')
         if not token:
             logger.error("TELEGRAM_BOT_TOKEN environment variable not set!")
-            return
+            sys.exit(1)
         
-        # Create the Application with proper settings
+        logger.info("Starting bot...")
+        
+        # Create the Application
         application = Application.builder().token(token).build()
         
         # Register command handlers
@@ -135,13 +140,13 @@ def main() -> None:
         # Register a handler for any text message
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
         
-        # Start the bot in polling mode
-        logger.info("Bot started and polling for updates...")
+        # Start the bot
+        logger.info("Bot is polling for updates...")
         application.run_polling()
         
     except Exception as e:
         logger.error(f"Failed to start bot: {e}")
-        raise
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()
